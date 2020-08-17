@@ -21,7 +21,7 @@
 typedef struct
 {
     char chunk_bytes[_CHUNK_SIZE_];
-} Chuck_codes;
+} Chunk_codes;
 
 
 void chain_encrypte(char *filename, int file_size)
@@ -31,7 +31,7 @@ void chain_encrypte(char *filename, int file_size)
     char *fileContent = (char *) calloc(file_size, sizeof(char));
     fread(fileContent, file_size, 1, fd);
     int chunk_numbers = file_size % _CHUNK_SIZE_ ? (file_size / _CHUNK_SIZE_) + 1 : (file_size / _CHUNK_SIZE_);
-    Chuck_codes *chunks = (Chuck_codes *) calloc (chunk_numbers, sizeof(char));
+    Chunk_codes *chunks = (Chunk_codes *) calloc (chunk_numbers, sizeof(char));
     //initialize chunks
     init_chunks(fileContent, file_size, chunks, chunk_numbers);
 }

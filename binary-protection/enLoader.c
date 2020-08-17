@@ -3,23 +3,8 @@
 	mohammad hossein asghari
 */
 #define _GNU_SOURCE
-#include <sys/mman.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include <sys/prctl.h>
-#include <sys/ptrace.h>
-#include <sys/user.h>
-#include <linux/elf.h>
-#include <enLoader.h>
+
+#include "enLoader.h"
 
 int main(int argc, char** argv)
 {
