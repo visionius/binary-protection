@@ -43,8 +43,8 @@ Chunk_codes *chain_encrypt(char *filename, int file_size)
 	{
 		for(int i = 0; i < _CHUNK_SIZE_ && offset < file_size; i++)
 		{
-			offset++;
 			chunks[j].chunk_bytes[i]=fileContent[offset];
+			offset++;
 		}
 	}
 	//hash & encrypt
@@ -95,8 +95,8 @@ Chunk_codes *chain_decrypt(char *filename, int file_size)
 	{
 		for(int i = 0; i < _CHUNK_SIZE_ && offset < file_size; i++)
 		{
-			offset++;
 			chunks[j].chunk_bytes[i]=fileContent[offset];
+			offset++;
 		}
 	}
 	BYTE iv[1][16] = {

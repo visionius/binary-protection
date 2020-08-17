@@ -16,8 +16,8 @@ void write_file(Chunk_codes *chunks, int file_size, FILE *file)
 	{
 		for(int i = 0; i < _CHUNK_SIZE_ && offset < file_size; i++)
 		{
-			offset++;
 			fileContent[offset] = chunks[j].chunk_bytes[i];
+			offset++;
 		}
 	}
 	fwrite(fileContent, file_size, 1, file);
