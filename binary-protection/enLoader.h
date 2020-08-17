@@ -15,6 +15,10 @@
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <linux/elf.h>
+#include <memory.h>
+#include "sha256.h"
+#include "aes.h"
+
 
 #define _CHUNK_SIZE_ 128
 
@@ -24,18 +28,15 @@ typedef struct
 } Chunk_codes;
 
 
-void chain_encrypte(char *filename, int file_size)
+Chunk_codes *chain_encrypt(char *filename, int file_size)
 {
     //open file
     FILE *fd = fopen(filename, "rb");
     char *fileContent = (char *) calloc(file_size, sizeof(char));
     fread(fileContent, file_size, 1, fd);
-	for(int i = 0 ; i < file_size; i++)
-	{
-		//printf("%x", fileContent[i]);
-	}
     int chunk_numbers = file_size % _CHUNK_SIZE_ ? (file_size / _CHUNK_SIZE_) + 1 : (file_size / _CHUNK_SIZE_);
     Chunk_codes *chunks = (Chunk_codes *) calloc(chunk_numbers, sizeof(Chunk_codes));
+	Chunk_codes *chunks_res = (Chunk_codes *) calloc(chunk_numbers, sizeof(Chunk_codes));
     //initialize chunks
 	unsigned long long int offset = 0;
 	for(int j = 0; j < chunk_numbers; j++)
@@ -47,6 +48,92 @@ void chain_encrypte(char *filename, int file_size)
 		}
 	}
 	//hash & encrypt
+	/*BYTE key[1][32] = {
+		{0x60,0x3d,0xeb,0x10,0x15,0xca,0x71,0xbe,0x2b,0x73,0xae,0xf0,0x85,0x7d,0x77,0x81,0x1f,0x35,0x2c,0x07,0x3b,0x61,0x08,0xd7,0x2d,0x98,0x10,0xa3,0x09,0x14,0xdf,0xf4}
+	};*/
+	BYTE iv[1][16] = {
+		{0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f}
+	};
+	BYTE hashed_chunk[SHA256_BLOCK_SIZE];
+	SHA256_CTX ctx;
+	int idx;
+	BYTE key[1][32];
+	memcpy(chunks_res[0].chunk_bytes, chunks[0].chunk_bytes, _CHUNK_SIZE_);
+	puts("\n\n");
+	printf(chunks_res[0].chunk_bytes);
+	puts("\n\n");
+	for(int k = 0 ; k < chunk_numbers-1; k++)
+	{
+		sha256_init(&ctx);
+		sha256_update(&ctx, chunks[k].chunk_bytes, strlen(chunks[k].chunk_bytes));
+		sha256_final(&ctx, hashed_chunk);
+		printf("\nblock [%d]: ", k);
+		for(int  i = 0 ; i < SHA256_BLOCK_SIZE ; i++)
+		{
+			key[0][i] = hashed_chunk[i];
+			printf("%x", key[0][i]);
+		}
+		WORD *key_schedule = (WORD *) calloc(60, sizeof(WORD));
+		aes_key_setup(key[0], key_schedule, 256);
+		aes_encrypt_cbc(chunks[k+1].chunk_bytes, _CHUNK_SIZE_ , chunks_res[k+1].chunk_bytes, key_schedule, 256, iv[0]);
+		free(key_schedule);
+
+	}
+	return chunks_res;
+}
+Chunk_codes *chain_decrypt(char *filename, int file_size)
+{
+	FILE *fd = fopen(filename, "rb");
+    char *fileContent = (char *) calloc(file_size, sizeof(char));
+    fread(fileContent, file_size, 1, fd);
+    int chunk_numbers = file_size % _CHUNK_SIZE_ ? (file_size / _CHUNK_SIZE_) + 1 : (file_size / _CHUNK_SIZE_);
+    Chunk_codes *chunks = (Chunk_codes *) calloc(chunk_numbers, sizeof(Chunk_codes));
+	Chunk_codes *chunks_res = (Chunk_codes *) calloc(chunk_numbers, sizeof(Chunk_codes));
+    //initialize chunks
+	unsigned long long int offset = 0;
+	for(int j = 0; j < chunk_numbers; j++)
+	{
+		for(int i = 0; i < _CHUNK_SIZE_ && offset < file_size; i++)
+		{
+			offset++;
+			chunks[j].chunk_bytes[i]=fileContent[offset];
+		}
+	}
+	BYTE iv[1][16] = {
+		{0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f}
+	};
+	BYTE hashed_chunk[SHA256_BLOCK_SIZE];
+	SHA256_CTX ctx;
+	int idx;
+	BYTE key[1][32];
+	memcpy(chunks_res[0].chunk_bytes, chunks[0].chunk_bytes, _CHUNK_SIZE_);
+	puts("\n\n");
+	printf("%c", fileContent[0]);
+	printf("%c", fileContent[1]);
+	printf("%c", fileContent[2]);
+	printf(chunks_res[0].chunk_bytes);
+	puts("\n\n");
+	for(int k = 0 ; k < chunk_numbers-1; k++)
+	{
+		sha256_init(&ctx);
+		sha256_update(&ctx, chunks_res[k].chunk_bytes, strlen(chunks_res[k].chunk_bytes));
+		sha256_final(&ctx, hashed_chunk);
+		printf("\nblock [%d]: ", k);
+		for(int  i = 0 ; i < SHA256_BLOCK_SIZE ; i++)
+		{
+			key[0][i] = hashed_chunk[i];
+			printf("%x", key[0][i]);
+		}
+		WORD *key_schedule = (WORD *) calloc(60, sizeof(WORD));
+		aes_key_setup(key[0], key_schedule, 256);
+		aes_decrypt_cbc(chunks[k+1].chunk_bytes, _CHUNK_SIZE_ , chunks_res[k+1].chunk_bytes, key_schedule, 256, iv[0]);
+		free(key_schedule);
+	}
+	return chunks_res;
+}
+void test_chunks(int chunk_numbers, Chunk_codes *chunks, int file_size)
+{
+
 	for(int i = 0 ; i < chunk_numbers; i++)
 	{
 		for(int j = 0 ; j < _CHUNK_SIZE_; j++)
@@ -55,7 +142,6 @@ void chain_encrypte(char *filename, int file_size)
 	printf("file_Size: %d, number_chunks: %d", file_size, chunk_numbers);
 
 }
-
 void get_decrypte_key(char *key, char *rsaKeyFile, char *keyFile)
 {
 	//128 byte key 256 char
