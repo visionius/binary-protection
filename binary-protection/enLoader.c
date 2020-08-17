@@ -8,13 +8,18 @@
 
 int main(int argc, char** argv)
 {
-	if(argc < 5)
+	if(argc < 2)
 	{
 		puts("[-] please type arguments:\n\t./enLoader <-e (encrypte) |-d (decrypte) > <program_file>\n");
 		exit(0);
 	}
-
-	int file_size = get_file_size(argv[1]);
+	int file_size = get_file_size(argv[2]);
+	if(!strcmp(argv[1], "-e"))
+	{
+		chain_encrypte(argv[2], file_size);
+		
+	}
+	return 0;
 	char *program_dec = (char *) calloc(file_size, sizeof(char));
 	char *key = (char *) calloc(256, sizeof(char));
 	get_decrypte_key(key, argv[2], argv[3]);

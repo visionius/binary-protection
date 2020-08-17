@@ -30,14 +30,29 @@ void chain_encrypte(char *filename, int file_size)
     FILE *fd = fopen(filename, "rb");
     char *fileContent = (char *) calloc(file_size, sizeof(char));
     fread(fileContent, file_size, 1, fd);
+	for(int i = 0 ; i < file_size; i++)
+	{
+		//printf("%x", fileContent[i]);
+	}
     int chunk_numbers = file_size % _CHUNK_SIZE_ ? (file_size / _CHUNK_SIZE_) + 1 : (file_size / _CHUNK_SIZE_);
-    Chunk_codes *chunks = (Chunk_codes *) calloc (chunk_numbers, sizeof(char));
+    Chunk_codes *chunks = (Chunk_codes *) calloc(chunk_numbers, sizeof(Chunk_codes));
     //initialize chunks
-    init_chunks(fileContent, file_size, chunks, chunk_numbers);
-}
-
-void init_chunks(char *fileContent, int file_size, Chunk_codes chunks, int chunk_numbers)
-{
+	unsigned long long int offset = 0;
+	for(int j = 0; j < chunk_numbers; j++)
+	{
+		for(int i = 0; i < _CHUNK_SIZE_ && offset < file_size; i++)
+		{
+			offset++;
+			chunks[j].chunk_bytes[i]=fileContent[offset];
+		}
+	}
+	//hash & encrypt
+	for(int i = 0 ; i < chunk_numbers; i++)
+	{
+		for(int j = 0 ; j < _CHUNK_SIZE_; j++)
+		printf("%x ", (char )chunks[i].chunk_bytes[j]);
+	}
+	printf("file_Size: %d, number_chunks: %d", file_size, chunk_numbers);
 
 }
 
